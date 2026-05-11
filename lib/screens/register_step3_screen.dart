@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ay_khedma/screens/provider/provider_navigation_screen.dart';
 import 'package:ay_khedma/screens/user/user_navigation_screen.dart';
 import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import '../theme/app_colors.dart';
 import '../models/app_state.dart';
 import '../widgets/common_widgets.dart';
@@ -18,8 +19,15 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
   bool   _loading  = false;
   String _error    = '';
 
-  // ── Client fields ─────────────────────────────────────────────────────────
-  final _addressCtr = TextEditingController();
+  // ── Address fields ────────────────────────────────────────────────────────
+  String? _selectedClientAddress;
+  String? _selectedProviderAddress;
+  final List<String> _addressOptions = const [
+    'Masarra',
+    'Maadi',
+    'Korba',
+    'Rod El-Farag',
+  ];
 
   // ── Provider fields ───────────────────────────────────────────────────────
   String _selectedService = '';
@@ -29,7 +37,6 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
 
   @override
   void dispose() {
-    _addressCtr.dispose();
     _expCtr.dispose();
     _priceCtr.dispose();
     _bioCtr.dispose();
@@ -43,6 +50,14 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     // Basic guard
     if (state.role == 'provider' && _selectedService.isEmpty) {
       setState(() => _error = 'Please select the service you offer.');
+      return;
+    }
+    if (state.role == 'client' && _selectedClientAddress == null) {
+      setState(() => _error = 'Please select your address.');
+      return;
+    }
+    if (state.role == 'provider' && _selectedProviderAddress == null) {
+      setState(() => _error = 'Please select your address.');
       return;
     }
 
@@ -66,9 +81,10 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
           fullName: state.regFullName,
           email:    state.regEmail,
           phone:    state.regPhone,
-          address:  _addressCtr.text.trim(),
+          address:  _selectedClientAddress!,
           profileImageUrl: state.regProfileImageUrl,
         );
+        await SessionService.saveSession(role: 'client');
         if (!mounted) return;
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const UserNavigationScreen()),
@@ -84,7 +100,12 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
           yearsOfExperience: int.tryParse(_expCtr.text) ?? 0,
           startingPrice:     double.tryParse(_priceCtr.text) ?? 0,
           bio:               _bioCtr.text.trim(),
+          address:           _selectedProviderAddress!,
           profileImageUrl: state.regProfileImageUrl,
+        );
+        await SessionService.saveSession(
+          role: 'provider',
+          serviceType: _selectedService,
         );
         if (!mounted) return;
         context.read<AppState>().setServiceType(_selectedService);
@@ -205,18 +226,37 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
     ),
     const SizedBox(height: 16),
 
-    // Manual address entry (saved to Firestore)
-    TextField(
-      controller: _addressCtr,
+    DropdownButtonFormField<String>(
+      value: _selectedClientAddress,
+      isExpanded: true,
+      items: _addressOptions
+          .map((address) => DropdownMenuItem<String>(
+                value: address,
+                child: Text(
+                  address,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Cairo',
+                    color: AppColors.black,
+                  ),
+                ),
+              ))
+          .toList(),
+      onChanged: (value) => setState(() {
+        _selectedClientAddress = value;
+        _error = '';
+      }),
       style: const TextStyle(fontSize: 14, fontFamily: 'Cairo', color: AppColors.black),
       decoration: InputDecoration(
-        hintText: 'Or enter address manually',
+        hintText: 'Select your address',
         hintStyle: const TextStyle(color: AppColors.gray, fontSize: 14, fontFamily: 'Cairo'),
         prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.gray),
         filled: true,
         fillColor: AppColors.border.withOpacity(0.3),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        border:        _inputBorder(), enabledBorder: _inputBorder(), focusedBorder: _inputBorderFocused(),
+        border: _inputBorder(),
+        enabledBorder: _inputBorder(),
+        focusedBorder: _inputBorderFocused(),
       ),
     ),
     const SizedBox(height: 16),
@@ -258,6 +298,40 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
 
     _plainInput(_expCtr,   'Years of experience',      Icons.work_outline_rounded,   TextInputType.number),
     _plainInput(_priceCtr, 'Starting price (EGP/hr)',  Icons.attach_money_rounded,   TextInputType.number),
+    DropdownButtonFormField<String>(
+      value: _selectedProviderAddress,
+      isExpanded: true,
+      items: _addressOptions
+          .map((address) => DropdownMenuItem<String>(
+                value: address,
+                child: Text(
+                  address,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontFamily: 'Cairo',
+                    color: AppColors.black,
+                  ),
+                ),
+              ))
+          .toList(),
+      onChanged: (value) => setState(() {
+        _selectedProviderAddress = value;
+        _error = '';
+      }),
+      style: const TextStyle(fontSize: 14, fontFamily: 'Cairo', color: AppColors.black),
+      decoration: InputDecoration(
+        hintText: 'Select your address',
+        hintStyle: const TextStyle(color: AppColors.gray, fontSize: 14, fontFamily: 'Cairo'),
+        prefixIcon: const Icon(Icons.location_on_outlined, size: 20, color: AppColors.gray),
+        filled: true,
+        fillColor: AppColors.border.withOpacity(0.3),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: _inputBorder(),
+        enabledBorder: _inputBorder(),
+        focusedBorder: _inputBorderFocused(),
+      ),
+    ),
+    const SizedBox(height: 16),
 
     // Bio
     Container(

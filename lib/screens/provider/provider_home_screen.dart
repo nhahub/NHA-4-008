@@ -9,7 +9,6 @@ class ProviderHomeScreen extends StatefulWidget {
 }
 
 class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
-  int _navIndex = 0;
 
   @override
   Widget build(BuildContext context) {

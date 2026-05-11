@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
 import '../widgets/common_widgets.dart';
 import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import '../models/app_state.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -49,6 +50,10 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       final profile = await AuthService.fetchProfile(uid);
+      await SessionService.saveSession(
+        role: profile.role,
+        serviceType: profile.serviceType,
+      );
 
       if (!mounted) return;
       context.read<AppState>().setRole(profile.role);
@@ -182,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               // Sign up link
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Text("Don't have an account? ", style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo')),
+                const Text("Don't have an account? ", style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo')),
                 GestureDetector(
                   onTap: () => Navigator.pushNamed(context, '/register'),
                   child: const Text('Sign Up', style: TextStyle(

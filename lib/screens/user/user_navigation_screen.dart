@@ -1,5 +1,7 @@
-import 'package:ay_khedma/screens/other_screens.dart';
 import 'package:ay_khedma/screens/user/user_favorite_screen.dart';
+import 'package:ay_khedma/screens/user/user_history_screen.dart';
+import 'package:ay_khedma/screens/user/user_profile_screen.dart';
+import 'package:ay_khedma/screens/user/user_setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:water_drop_nav_bar/water_drop_nav_bar.dart';
 
@@ -18,9 +20,10 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
   late PageController pageController;
 
   final List<Widget> screens = [
-    HomeUserScreen(),
-    TrackingScreen(),
-    UserFavoriteScreen(),
+    const UserHomeScreen(),
+    const UserFavoriteScreen(),
+    const UserHistoryScreen(),
+    const UserSettingScreen(),
   ];
 
   @override
@@ -70,12 +73,12 @@ class _UserNavigationScreenState extends State<UserNavigationScreen> {
             outlinedIcon: Icons.favorite_border,
           ),
           BarItem(
-            filledIcon: Icons.person,
-            outlinedIcon: Icons.person_outline,
-          ),
-          BarItem(
             filledIcon: Icons.access_time_filled,
             outlinedIcon: Icons.access_time_outlined,
+          ),
+          BarItem(
+            filledIcon: Icons.settings,
+            outlinedIcon: Icons.settings_outlined,
           ),
         ],
       ),

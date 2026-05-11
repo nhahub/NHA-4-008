@@ -10,8 +10,19 @@ class UserFavoriteScreen extends StatefulWidget {
 class _UserFavoriteScreenState extends State<UserFavoriteScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+            "Favorites",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Cairo',
+          ),
+        ),
+        centerTitle: true,
+      ),
+      body: const Center(
         child: Text(
             "Favorite"
         ),

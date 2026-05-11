@@ -4,153 +4,6 @@ import '../models/provider_model.dart';
 import '../widgets/common_widgets.dart';
 
 // ═══════════════════════════════════════════════════════
-//  SERVICE DETAILS
-// ═══════════════════════════════════════════════════════
-class ServiceDetailsScreen extends StatelessWidget {
-  const ServiceDetailsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final provider = ModalRoute.of(context)!.settings.arguments as ProviderModel?
-        ?? sampleProviders.first;
-
-    return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Column(children: [
-        // Hero header
-        _buildHero(context, provider),
-        // Scrollable body
-        Expanded(child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SectionLabel('About'),
-            Text(provider.bio, style: const TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo', height: 1.8)),
-            const SizedBox(height: 20),
-            const SectionLabel('Service Info'),
-            Wrap(spacing: 8, runSpacing: 8, children: [
-              _infoPill(Icons.access_time_outlined, '30–60 min'),
-              _infoPill(Icons.attach_money_rounded, '${provider.startingPrice.toInt()}+ EGP'),
-              _infoPill(Icons.location_on_outlined, '${provider.distanceKm} km away'),
-            ]),
-            const SizedBox(height: 20),
-            const SectionLabel('Reviews'),
-            _reviewCard('Sara Ahmed', 5, '2 days ago', 'Excellent work! Fixed all issues quickly and professionally.'),
-            _reviewCard('Omar Khalil', 4, '1 week ago', 'Good service, on time and reasonable price. Will use again.'),
-          ]),
-        )),
-        // Footer
-        _buildFooter(context, provider),
-      ]),
-    );
-  }
-
-  Widget _buildHero(BuildContext context, ProviderModel p) => Container(
-    padding: const EdgeInsets.fromLTRB(24, 52, 24, 28),
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight,
-        colors: [AppColors.navy, AppColors.blue])),
-    child: Stack(children: [
-      Positioned(bottom: -20, right: -20, child: Container(width: 120, height: 120,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.teal.withOpacity(0.2)))),
-      Column(children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          GestureDetector(onTap: () => Navigator.pop(context),
-            child: Container(width: 40, height: 40,
-              decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.15)),
-              child: const Icon(Icons.chevron_left, color: Colors.white, size: 22))),
-          Container(width: 40, height: 40,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.15)),
-            child: const Icon(Icons.favorite_outline_rounded, color: Colors.white, size: 20)),
-        ]),
-        const SizedBox(height: 14),
-        Container(width: 76, height: 76,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(22),
-            color: Colors.white.withOpacity(0.15), border: Border.all(color: Colors.white.withOpacity(0.2), width: 2)),
-          child: Icon(_icon(p.serviceType), size: 40, color: Colors.white)),
-        const SizedBox(height: 12),
-        Text(p.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo')),
-        Text('${p.serviceLabel} • Cairo, Egypt',
-          style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.65), fontFamily: 'Cairo')),
-        const SizedBox(height: 14),
-        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          _stat('${p.rating}', 'Rating'), _statDiv(),
-          _stat('${p.jobsDone}+', 'Jobs'),  _statDiv(),
-          _stat('98%', 'Success'),          _statDiv(),
-          _stat('${p.experience} yr', 'Exp.'),
-        ]),
-      ]),
-    ]),
-  );
-
-  Widget _stat(String v, String l) => Column(children: [
-    Text(v, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo')),
-    Text(l, style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6), fontFamily: 'Cairo')),
-  ]);
-  Widget _statDiv() => Container(height: 28, width: 1, margin: const EdgeInsets.symmetric(horizontal: 14), color: Colors.white.withOpacity(0.2));
-
-  Widget _infoPill(IconData icon, String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 7),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: AppColors.light),
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 14, color: AppColors.teal),
-      const SizedBox(width: 6),
-      Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.black, fontFamily: 'Cairo')),
-    ]),
-  );
-
-  Widget _reviewCard(String name, int stars, String date, String text) => Container(
-    margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), color: AppColors.light),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        CircleAvatar(radius: 18, backgroundColor: AppColors.teal, child: Text(name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontFamily: 'Cairo'))),
-        const SizedBox(width: 10),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.black, fontFamily: 'Cairo')),
-          RatingStars(rating: stars.toDouble(), size: 11),
-        ]),
-        const Spacer(),
-        Text(date, style: const TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo')),
-      ]),
-      const SizedBox(height: 8),
-      Text(text, style: const TextStyle(fontSize: 12, color: AppColors.gray, fontFamily: 'Cairo', height: 1.7)),
-    ]),
-  );
-
-  Widget _buildFooter(BuildContext context, ProviderModel p) => Container(
-    padding: const EdgeInsets.fromLTRB(24, 14, 24, 28),
-    decoration: const BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: AppColors.border))),
-    child: Row(children: [
-      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Starting from', style: TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo')),
-        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          Text('${p.startingPrice.toInt()}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.navy, fontFamily: 'Cairo')),
-          const Text(' EGP', style: TextStyle(fontSize: 12, color: AppColors.gray, fontFamily: 'Cairo')),
-        ]),
-      ]),
-      const SizedBox(width: 16),
-      Expanded(child: SizedBox(height: 50, child: ElevatedButton(
-        onPressed: () => Navigator.pushNamed(context, '/request', arguments: p),
-        style: ElevatedButton.styleFrom(backgroundColor: AppColors.teal,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)), elevation: 4,
-          shadowColor: AppColors.teal.withOpacity(0.4)),
-        child: const Text('Book Now', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, fontFamily: 'Cairo')),
-      ))),
-    ]),
-  );
-
-  IconData _icon(String type) {
-    switch (type) {
-      case 'electrician': return Icons.electrical_services_outlined;
-      case 'plumber':     return Icons.plumbing_outlined;
-      case 'delivery':    return Icons.delivery_dining_outlined;
-      default:            return Icons.build_outlined;
-    }
-  }
-}
-
-// ═══════════════════════════════════════════════════════
 //  REQUEST SERVICE
 // ═══════════════════════════════════════════════════════
 class RequestServiceScreen extends StatefulWidget {
@@ -184,8 +37,8 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
             ]),
             if (_scheduleMode) ...[
               const SizedBox(height: 14),
-              AppInput(hint: 'Select Date', icon: Icons.calendar_today_outlined, keyboardType: TextInputType.datetime),
-              AppInput(hint: 'Select Time', icon: Icons.access_time_outlined),
+              const AppInput(hint: 'Select Date', icon: Icons.calendar_today_outlined, keyboardType: TextInputType.datetime),
+              const AppInput(hint: 'Select Time', icon: Icons.access_time_outlined),
             ],
             const SizedBox(height: 14),
             const SectionLabel('Describe the problem'),
@@ -193,9 +46,9 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border, width: 1.5)),
-              child: TextField(maxLines: 3,
-                style: const TextStyle(fontSize: 14, fontFamily: 'Cairo'),
-                decoration: const InputDecoration(
+              child: const TextField(maxLines: 3,
+                style: TextStyle(fontSize: 14, fontFamily: 'Cairo'),
+                decoration: InputDecoration(
                   hintText: 'e.g. Electricity went out in the living room...',
                   hintStyle: TextStyle(color: AppColors.gray, fontSize: 13, fontFamily: 'Cairo'),
                   border: InputBorder.none, isDense: true)),
@@ -216,10 +69,10 @@ class _RequestServiceScreenState extends State<RequestServiceScreen> {
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(20),
         color: AppColors.teal.withOpacity(0.06),
         border: Border.all(color: AppColors.teal.withOpacity(0.3), width: 2, style: BorderStyle.solid)),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+      child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Icon(Icons.location_on_outlined, size: 34, color: AppColors.teal),
-        const SizedBox(height: 8),
-        const Text('Tap to select location', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.teal, fontFamily: 'Cairo')),
+        SizedBox(height: 8),
+        Text('Tap to select location', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.teal, fontFamily: 'Cairo')),
         Text('Or use GPS to auto-detect', style: TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo')),
       ]),
     ),
@@ -391,7 +244,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
           const SizedBox(height: 14),
           const Text('Payment Successful!', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900, color: AppColors.black, fontFamily: 'Cairo')),
           const SizedBox(height: 7),
-          Text('Your booking is confirmed.\nThe provider will arrive shortly.',
+          const Text('Your booking is confirmed.\nThe provider will arrive shortly.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo', height: 1.7)),
           const SizedBox(height: 24),
@@ -460,9 +313,9 @@ class TrackingScreen extends StatelessWidget {
         gradient: const LinearGradient(colors: [AppColors.blue, AppColors.teal])),
         child: const Icon(Icons.electrical_services_outlined, color: Colors.white, size: 26)),
       const SizedBox(width: 13),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Mohamed Ali', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.black, fontFamily: 'Cairo')),
-        const Text('🚗 Arriving in ~12 minutes', style: TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
+      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Mohamed Ali', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.black, fontFamily: 'Cairo')),
+        Text('🚗 Arriving in ~12 minutes', style: TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w600, fontFamily: 'Cairo')),
       ])),
       Container(width: 40, height: 40, decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.teal),
         child: const Icon(Icons.call_rounded, color: Colors.white, size: 18)),
@@ -539,7 +392,7 @@ class _RatingScreenState extends State<RatingScreen> {
             const SizedBox(height: 18),
             const Text('Service Completed!', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.black, fontFamily: 'Cairo')),
             const SizedBox(height: 6),
-            Text('Mohamed Ali finished the job.\nPlease rate your experience.',
+            const Text('Mohamed Ali finished the job.\nPlease rate your experience.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo', height: 1.7)),
             const SizedBox(height: 28),
@@ -586,9 +439,9 @@ class _RatingScreenState extends State<RatingScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.border, width: 1.5)),
-              child: TextField(maxLines: 3,
-                style: const TextStyle(fontSize: 14, fontFamily: 'Cairo'),
-                decoration: const InputDecoration(
+              child: const TextField(maxLines: 3,
+                style: TextStyle(fontSize: 14, fontFamily: 'Cairo'),
+                decoration: InputDecoration(
                   hintText: 'Write your review here...',
                   hintStyle: TextStyle(color: AppColors.gray, fontSize: 13, fontFamily: 'Cairo'),
                   border: InputBorder.none, isDense: true)),

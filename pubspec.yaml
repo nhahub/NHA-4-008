@@ -17,6 +17,7 @@ dependencies:
   cloud_firestore: ^6.3.0
   image_picker: ^1.2.1
   water_drop_nav_bar: ^2.2.2
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

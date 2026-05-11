@@ -113,14 +113,14 @@ class AppHeader extends StatelessWidget {
       decoration: const BoxDecoration(color: AppColors.navy),
       child: Stack(children: [
         // background circles
-        Positioned(top: -30, right: -30,
-          child: Container(width: 160, height: 160,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: AppColors.teal.withOpacity(0.15)))),
-        Positioned(bottom: -20, left: -20,
-          child: Container(width: 110, height: 110,
-            decoration: BoxDecoration(shape: BoxShape.circle,
-              color: AppColors.blue.withOpacity(0.25)))),
+        // Positioned(top: -30, right: -30,
+        //   child: Container(width: 160, height: 160,
+        //     decoration: BoxDecoration(shape: BoxShape.circle,
+        //       color: AppColors.teal.withOpacity(0.15)))),
+        // Positioned(bottom: -20, left: -20,
+        //   child: Container(width: 110, height: 110,
+        //     decoration: BoxDecoration(shape: BoxShape.circle,
+        //       color: AppColors.blue.withOpacity(0.25)))),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,11 +159,14 @@ class SectionLabel extends StatelessWidget {
   const SectionLabel(this.text, {super.key});
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 10),
-    child: Text(text, style: const TextStyle(
-      fontSize: 13, fontWeight: FontWeight.w700,
-      color: AppColors.black, fontFamily: 'Cairo')),
+  Widget build(BuildContext context) => Text(
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      color: AppColors.black,
+      fontFamily: 'Cairo',
+    ),
   );
 }
 

@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/app_state.dart';
+import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import '../theme/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -21,9 +26,50 @@ class _SplashScreenState extends State<SplashScreen>
     _scale    = Tween<double>(begin: 0.7, end: 1).animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.4, curve: Curves.elasticOut)));
     _progress = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0.3, 1.0, curve: Curves.easeInOut)));
     _ctrl.forward();
-    Future.delayed(const Duration(milliseconds: 2600), () {
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
-    });
+    _decideNextRoute();
+  }
+
+  Future<void> _decideNextRoute() async {
+    await Future.delayed(const Duration(milliseconds: 2600));
+    if (!mounted) return;
+
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        await SessionService.clearSession();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      final state = context.read<AppState>();
+      AuthProfile? profile = await SessionService.loadSession();
+      if (profile == null ||
+          (profile.role == 'provider' &&
+              (profile.serviceType == null || profile.serviceType!.isEmpty))) {
+        profile = await AuthService.fetchProfile(currentUser.uid);
+        await SessionService.saveSession(
+          role: profile.role,
+          serviceType: profile.serviceType,
+        );
+      }
+
+      state.setRole(profile.role);
+      if (profile.role == 'provider' && profile.serviceType != null) {
+        state.setServiceType(profile.serviceType!);
+      } else {
+        state.setServiceType('');
+      }
+
+      if (!mounted) return;
+      final route = profile.role == 'provider'
+          ? '/provider_navigation'
+          : '/user_navigation';
+      Navigator.pushReplacementNamed(context, route);
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   @override

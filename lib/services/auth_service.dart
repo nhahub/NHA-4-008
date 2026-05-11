@@ -59,6 +59,7 @@ class AuthService {
     required String fullName,
     required String email,
     required String phone,
+    required String address,
     required String serviceType,   // 'electrician' | 'plumber' | 'delivery'
     required int    yearsOfExperience,
     required double startingPrice,
@@ -74,6 +75,7 @@ class AuthService {
       'fullName':          fullName,
       'email':             email,
       'phone':             phone,
+      'address':           address,
       if (profileImageUrl != null && profileImageUrl.trim().isNotEmpty)
         'profileImageUrl': profileImageUrl,
       'serviceType':       serviceType,
