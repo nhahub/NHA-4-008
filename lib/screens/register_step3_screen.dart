@@ -84,8 +84,9 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
           address:  _selectedClientAddress!,
           profileImageUrl: state.regProfileImageUrl,
         );
-        await SessionService.saveSession(role: 'client');
+        await SessionService.saveSession(role: 'client', fullName: state.regFullName);
         if (!mounted) return;
+        context.read<AppState>().setLoggedInFullName(state.regFullName);
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const UserNavigationScreen()),
           (_) => false,
@@ -106,9 +107,11 @@ class _RegisterStep3ScreenState extends State<RegisterStep3Screen> {
         await SessionService.saveSession(
           role: 'provider',
           serviceType: _selectedService,
+          fullName: state.regFullName,
         );
         if (!mounted) return;
         context.read<AppState>().setServiceType(_selectedService);
+        context.read<AppState>().setLoggedInFullName(state.regFullName);
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const ProviderNavigationScreen()),
           (_) => false,

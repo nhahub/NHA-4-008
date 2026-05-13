@@ -15,6 +15,9 @@ class ServiceDetailsScreen extends StatefulWidget {
 class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   bool? _isFavorite;
   bool _favoriteActionBusy = false;
+  /// `null` before fetch; empty or URL after.
+  String? _profileImageUrl;
+  String? _providerAddress;
 
   ProviderModel _provider(BuildContext context) =>
       ModalRoute.of(context)!.settings.arguments as ProviderModel? ??
@@ -25,7 +28,58 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadFavoriteStatus();
+      _loadProfileImageUrl();
+      _loadProviderAddress();
     });
+  }
+
+  Future<void> _loadProviderAddress() async {
+    final provider = _provider(context);
+    const collections = ['electricians', 'plumbers', 'delivery'];
+    try {
+      final db = FirebaseFirestore.instance;
+      final snaps = await Future.wait(
+        collections.map((c) => db.collection(c).doc(provider.id).get()),
+      );
+      for (final snap in snaps) {
+        if (snap.exists && snap.data() != null) {
+          final address = (snap.data()!['address'] as String?)?.trim() ?? '';
+          if (!mounted) return;
+          setState(() => _providerAddress = address);
+          return;
+        }
+      }
+      if (!mounted) return;
+      setState(() => _providerAddress = '');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _providerAddress = '');
+    }
+  }
+
+  Future<void> _loadProfileImageUrl() async {
+    final provider = _provider(context);
+    const collections = ['electricians', 'plumbers', 'delivery'];
+    try {
+      final db = FirebaseFirestore.instance;
+      final snaps = await Future.wait(
+        collections.map((c) => db.collection(c).doc(provider.id).get()),
+      );
+      for (final snap in snaps) {
+        if (snap.exists && snap.data() != null) {
+          final url =
+              (snap.data()!['profileImageUrl'] as String?)?.trim() ?? '';
+          if (!mounted) return;
+          setState(() => _profileImageUrl = url);
+          return;
+        }
+      }
+      if (!mounted) return;
+      setState(() => _profileImageUrl = '');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _profileImageUrl = '');
+    }
   }
 
   Future<void> _loadFavoriteStatus() async {
@@ -117,7 +171,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       body: Column(children: [
         // Hero header
         _buildHero(context, provider),
-        // Scrollable body
         Expanded(child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -128,7 +181,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             Wrap(spacing: 8, runSpacing: 8, children: [
               _infoPill(Icons.access_time_outlined, '30–60 min'),
               _infoPill(Icons.attach_money_rounded, '${provider.startingPrice.toInt()}+ EGP'),
-              _infoPill(Icons.location_on_outlined, '${provider.distanceKm} km away'),
+              _infoPill(
+                Icons.location_on_outlined,
+                (_providerAddress != null && _providerAddress!.isNotEmpty)
+                    ? _providerAddress!
+                    : 'Address not provided',
+              ),
             ]),
             const SizedBox(height: 20),
             const SectionLabel('Reviews'),
@@ -168,13 +226,36 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           ),
         ]),
         const SizedBox(height: 14),
-        Container(width: 76, height: 76,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(22),
-                color: Colors.white.withOpacity(0.15), border: Border.all(color: Colors.white.withOpacity(0.2), width: 2)),
-            child: Icon(_icon(p.serviceType), size: 40, color: Colors.white)),
+        Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                color: Colors.white.withOpacity(0.15),
+                border: Border.all(
+                    color: Colors.white.withOpacity(0.2), width: 2)),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: _profileImageUrl != null &&
+                      _profileImageUrl!.isNotEmpty
+                  ? Image.network(
+                      _profileImageUrl!,
+                      fit: BoxFit.cover,
+                      width: 76,
+                      height: 76,
+                      errorBuilder: (_, __, ___) => Center(
+                        child: Icon(_icon(p.serviceType),
+                            size: 40, color: Colors.white),
+                      ),
+                    )
+                  : Center(
+                      child: Icon(_icon(p.serviceType),
+                          size: 40, color: Colors.white),
+                    ),
+            )),
         const SizedBox(height: 12),
         Text(p.name, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, fontFamily: 'Cairo')),
-        Text('${p.serviceLabel} • Cairo, Egypt',
+        Text(p.serviceLabel,
             style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.65), fontFamily: 'Cairo')),
         const SizedBox(height: 14),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [

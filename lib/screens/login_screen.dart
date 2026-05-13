@@ -53,14 +53,18 @@ class _LoginScreenState extends State<LoginScreen> {
       await SessionService.saveSession(
         role: profile.role,
         serviceType: profile.serviceType,
+        fullName: profile.fullName,
       );
 
       if (!mounted) return;
       context.read<AppState>().setRole(profile.role);
+      context.read<AppState>().setLoggedInFullName(profile.fullName ?? '');
       if (profile.role == 'provider' && profile.serviceType != null) {
         context.read<AppState>().setServiceType(profile.serviceType!);
+        await context.read<AppState>().loadProviderAvailabilityFromFirestore();
       }
 
+      if (!mounted) return;
       final route = profile.role == 'provider' ? '/provider_navigation' : '/user_navigation';
       Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
     } on FirebaseAuthException catch (e) {
@@ -102,14 +106,12 @@ class _LoginScreenState extends State<LoginScreen> {
         AppHeader(
           title: 'Login',
           subtitle: 'Welcome Back',
-          trailing: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+          trailing: SizedBox(
+            width: 70, height: 70,
+            child: Image.asset(
+              'images/logo.png',
+              fit: BoxFit.contain,
             ),
-            child: const Icon(Icons.person_outline_rounded, color: Colors.white, size: 32),
           ),
         ),
 

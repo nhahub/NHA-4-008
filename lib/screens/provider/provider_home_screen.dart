@@ -1,7 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../theme/app_colors.dart';
 import '../../models/app_state.dart';
+import '../../models/request_model.dart';
+import '../../services/auth_service.dart';
+import '../../services/request_service.dart';
+import '../../theme/app_colors.dart';
 
 class ProviderHomeScreen extends StatefulWidget {
   const ProviderHomeScreen({super.key});
@@ -10,6 +14,40 @@ class ProviderHomeScreen extends StatefulWidget {
 
 class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
+  final Map<String, String> _clientFullNamesByUserId = {};
+  final Set<String> _clientNameFetchInFlight = {};
+
+  void _prefetchClientFullNames(Iterable<RequestModel> requests) {
+    if (!mounted) return;
+    for (final r in requests) {
+      final id = r.userId.trim();
+      if (id.isEmpty) continue;
+      if (_clientFullNamesByUserId.containsKey(id) || _clientNameFetchInFlight.contains(id)) {
+        continue;
+      }
+      _clientNameFetchInFlight.add(id);
+      AuthService.fetchClientFullName(id).then((name) {
+        if (!mounted) return;
+        setState(() {
+          _clientNameFetchInFlight.remove(id);
+          _clientFullNamesByUserId[id] =
+              (name != null && name.isNotEmpty) ? name : 'Customer';
+        });
+      }).catchError((_) {
+        if (!mounted) return;
+        setState(() {
+          _clientNameFetchInFlight.remove(id);
+          _clientFullNamesByUserId[id] = 'Customer';
+        });
+      });
+    }
+  }
+
+  String _customerDisplayName(String userId) {
+    final id = userId.trim();
+    if (id.isEmpty) return 'Customer';
+    return _clientFullNamesByUserId[id] ?? 'Customer';
+  }
   @override
   Widget build(BuildContext context) {
     final state = context.watch<AppState>();
@@ -20,12 +58,12 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
         Expanded(child: SingleChildScrollView(
           child: Column(children: [
             _buildEarningsCard(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Align(alignment: Alignment.centerLeft,
                 child: Text(
                     'Incoming Requests',
-                    style: const TextStyle(
+                    style: TextStyle(
                   fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color: AppColors.black,
@@ -33,7 +71,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                 )
               ),
             ),
-            _buildRequestsList(),
+            _buildRequestsList(state),
           ]),
         )),
       ]),
@@ -51,16 +89,6 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     ),
     child: Stack(
         children: [
-      Positioned(top: -40,
-          right: -40,
-          child: Container(
-              width: 160,
-              height: 160,
-        decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.teal.withOpacity(0.1))
-          )
-      ),
       Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -78,9 +106,11 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                     color: AppColors.white.withOpacity(0.65),
                     fontFamily: 'Cairo')
             ),
-            const Text(
-                'Mohamed Ali',
-                style: TextStyle(
+            Text(
+                state.loggedInFullName.isNotEmpty
+                    ? state.loggedInFullName
+                    : 'Provider',
+                style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: AppColors.white,
@@ -120,7 +150,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
         const SizedBox(height: 16),
         // Online toggle
         GestureDetector(
-          onTap: () => context.read<AppState>().toggleOnline(),
+          onTap: () => context.read<AppState>().toggleProviderAvailability(),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
@@ -191,31 +221,108 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     Text(lbl, style: TextStyle(color: AppColors.white.withOpacity(0.6), fontSize: 11, fontFamily: 'Cairo')),
   ]);
 
-  Widget _buildRequestsList() => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
-    child: Column(children: [
-      _requestCard(
-        userName: 'Sara Ahmed',
-        timeAgo: '2 min ago • 1.2 km',
-        service: 'Electrical Repair',
-        desc: 'Electricity went out in the living room. Tripped breaker won\'t reset.',
-        address: '12 El Nasr St, Nasr City',
-        price: '150',
-      ),
-      const SizedBox(height: 12),
-      _requestCard(
-        userName: 'Omar Khalil',
-        timeAgo: '8 min ago • 2.5 km',
-        service: 'New Installation',
-        desc: 'Need to install 3 ceiling fans and replace old light fixtures.',
-        address: '7 Abbas El Akkad, Nasr City',
-        price: '200',
-      ),
-    ]),
-  );
+  Widget _buildRequestsList(AppState state) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(20, 0, 20, 80),
+        child: Text(
+          'Sign in to see incoming requests.',
+          style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo'),
+        ),
+      );
+    }
 
-  Widget _requestCard({required String userName, required String timeAgo,
-    required String service, required String desc, required String address, required String price}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 80),
+      child: StreamBuilder<List<RequestModel>>(
+        stream: RequestService.watchRequestsForProvider(uid),
+        builder: (context, snap) {
+          if (snap.hasError) {
+            return Text(
+              'Could not load requests.',
+              style: TextStyle(fontSize: 13, color: AppColors.red.withOpacity(0.9), fontFamily: 'Cairo'),
+            );
+          }
+          if (snap.connectionState == ConnectionState.waiting && !snap.hasData) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          final incoming = (snap.data ?? const <RequestModel>[])
+              .where((r) => r.status == RequestStatus.waiting)
+              .toList();
+          if (incoming.isEmpty) {
+            return const Text(
+              'No incoming requests yet.',
+              style: TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo'),
+            );
+          }
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _prefetchClientFullNames(incoming);
+          });
+          return Column(
+            children: [
+              for (var i = 0; i < incoming.length; i++) ...[
+                if (i > 0) const SizedBox(height: 12),
+                _requestCard(
+                  context: context,
+                  state: state,
+                  request: incoming[i],
+                  customerName: _customerDisplayName(incoming[i].userId),
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  String _formatTimeAgo(DateTime? dt) {
+    if (dt == null) return '';
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return 'Just now';
+    if (diff.inHours < 1) return '${diff.inMinutes} min ago';
+    if (diff.inDays < 1) return '${diff.inHours} h ago';
+    if (diff.inDays < 7) return '${diff.inDays} d ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+
+  IconData _serviceIcon(String serviceType) {
+    switch (serviceType) {
+      case 'electrician':
+        return Icons.electrical_services_outlined;
+      case 'plumber':
+        return Icons.plumbing_outlined;
+      case 'delivery':
+        return Icons.local_shipping_outlined;
+      default:
+        return Icons.handyman_outlined;
+    }
+  }
+
+  String _formatScheduledAt(BuildContext context, DateTime dt) {
+    final loc = MaterialLocalizations.of(context);
+    final dateStr = loc.formatFullDate(dt);
+    final timeStr = loc.formatTimeOfDay(
+      TimeOfDay.fromDateTime(dt),
+      alwaysUse24HourFormat: MediaQuery.alwaysUse24HourFormatOf(context),
+    );
+    return '$dateStr · $timeStr';
+  }
+
+  Widget _requestCard({
+    required BuildContext context,
+    required AppState state,
+    required RequestModel request,
+    required String customerName,
+  }) {
+    final timeAgo = _formatTimeAgo(request.createdAt);
+    final address = request.location?.trim().isNotEmpty == true ? request.location!.trim() : '—';
+    final price = request.startingPrice > 0 ? request.startingPrice.toStringAsFixed(0) : '—';
+    final icon = _serviceIcon(state.serviceType);
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -225,8 +332,19 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(userName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.black, fontFamily: 'Cairo')),
-            Text(timeAgo, style: const TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo')),
+            Text(
+              customerName,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.black,
+                fontFamily: 'Cairo',
+              ),
+            ),
+            Text(
+              timeAgo.isEmpty ? ' ' : timeAgo,
+              style: const TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo'),
+            ),
           ]),
           Text('$price EGP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.teal, fontFamily: 'Cairo')),
         ]),
@@ -235,14 +353,30 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(borderRadius: BorderRadius.circular(20), color: AppColors.teal.withOpacity(0.08)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.electrical_services_outlined, size: 13, color: AppColors.teal),
+            Icon(icon, size: 13, color: AppColors.teal),
             const SizedBox(width: 5),
-            Text(service, style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w700, fontFamily: 'Cairo')),
+            Text(request.label, style: const TextStyle(fontSize: 12, color: AppColors.teal, fontWeight: FontWeight.w700, fontFamily: 'Cairo')),
           ]),
         ),
         const SizedBox(height: 8),
-        Text(desc, style: const TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo', height: 1.6)),
+        Text(request.description, style: const TextStyle(fontSize: 13, color: AppColors.gray, fontFamily: 'Cairo', height: 1.6)),
         const SizedBox(height: 8),
+        if (request.scheduledAt != null) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.teal),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  _formatScheduledAt(context, request.scheduledAt!),
+                  style: const TextStyle(fontSize: 12, color: AppColors.gray, fontFamily: 'Cairo'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
         Row(children: [
           const Icon(Icons.location_on_outlined, size: 14, color: AppColors.teal),
           const SizedBox(width: 4),

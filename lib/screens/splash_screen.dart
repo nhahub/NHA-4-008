@@ -44,22 +44,30 @@ class _SplashScreenState extends State<SplashScreen>
 
       final state = context.read<AppState>();
       AuthProfile? profile = await SessionService.loadSession();
-      if (profile == null ||
-          (profile.role == 'provider' &&
-              (profile.serviceType == null || profile.serviceType!.isEmpty))) {
+      final missingName = profile == null ||
+          profile.fullName == null ||
+          profile.fullName!.trim().isEmpty;
+      final missingProviderType = profile != null &&
+          profile.role == 'provider' &&
+          (profile.serviceType == null || profile.serviceType!.isEmpty);
+
+      if (profile == null || missingProviderType || missingName) {
         profile = await AuthService.fetchProfile(currentUser.uid);
         await SessionService.saveSession(
           role: profile.role,
           serviceType: profile.serviceType,
+          fullName: profile.fullName,
         );
       }
 
       state.setRole(profile.role);
       if (profile.role == 'provider' && profile.serviceType != null) {
         state.setServiceType(profile.serviceType!);
+        await state.loadProviderAvailabilityFromFirestore();
       } else {
         state.setServiceType('');
       }
+      state.setLoggedInFullName(profile.fullName ?? '');
 
       if (!mounted) return;
       final route = profile.role == 'provider'
@@ -103,7 +111,10 @@ class _SplashScreenState extends State<SplashScreen>
                         color: AppColors.teal.withOpacity(0.2),
                         border: Border.all(color: AppColors.teal.withOpacity(0.5), width: 2),
                       ),
-                      child: const Icon(Icons.build_rounded, size: 54, color: AppColors.teal),
+                      child: Image.asset(
+                        'images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

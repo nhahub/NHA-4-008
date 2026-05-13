@@ -12,7 +12,14 @@ class _UserHistoryScreenState extends State<UserHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User History'),
+        title: const Text(
+          'History',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Cairo',
+          ),
+        ),
         centerTitle: true,
       ),
       body: const Center(

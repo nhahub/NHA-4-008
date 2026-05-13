@@ -4,8 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class AuthProfile {
   final String role; // 'client' | 'provider'
   final String? serviceType; // for providers: 'electrician' | 'plumber' | 'delivery'
+  final String? fullName;
 
-  const AuthProfile({required this.role, this.serviceType});
+  const AuthProfile({required this.role, this.serviceType, this.fullName});
 }
 
 class AuthService {
@@ -84,8 +85,36 @@ class AuthService {
       'bio':               bio,
       'rating':            0.0,
       'totalReviews':      0,
+      /// Whether this provider is accepting new requests (`available` | `unavailable`).
+      'status':            'available',
       'createdAt':         FieldValue.serverTimestamp(),
     });
+  }
+
+  /// Reads provider profile `status`. Missing or unknown values default to available.
+  static Future<bool> isProviderAvailableInFirestore({
+    required String uid,
+    required String serviceType,
+  }) async {
+    final collectionName = _serviceCollection(serviceType);
+    final doc = await _db.collection(collectionName).doc(uid).get();
+    if (!doc.exists) return true;
+    final raw = doc.data()?['status'];
+    if (raw == null) return true;
+    return raw.toString().toLowerCase().trim() != 'unavailable';
+  }
+
+  /// Persists availability to the provider's service collection document.
+  static Future<void> setProviderAvailabilityInFirestore({
+    required String uid,
+    required String serviceType,
+    required bool available,
+  }) async {
+    final collectionName = _serviceCollection(serviceType);
+    await _db.collection(collectionName).doc(uid).set(
+      {'status': available ? 'available' : 'unavailable'},
+      SetOptions(merge: true),
+    );
   }
 
   /// Maps a service type string to its Firestore collection name.
@@ -117,8 +146,11 @@ class AuthService {
   static Future<AuthProfile> fetchProfile(String uid) async {
     final userDoc = await _db.collection('users').doc(uid).get();
     if (userDoc.exists) {
-      final role = (userDoc.data()?['role'] as String?) ?? 'client';
-      return AuthProfile(role: role);
+      final data = userDoc.data() ?? const <String, dynamic>{};
+      final role = (data['role'] as String?) ?? 'client';
+      final rawName = (data['fullName'] as String?)?.trim();
+      final fullName = (rawName == null || rawName.isEmpty) ? null : rawName;
+      return AuthProfile(role: role, fullName: fullName);
     }
 
     const providerCollections = <String>['electricians', 'plumbers', 'delivery'];
@@ -128,11 +160,23 @@ class AuthService {
         final data = doc.data() ?? const <String, dynamic>{};
         final serviceType = (data['serviceType'] as String?) ??
             (col == 'delivery' ? 'delivery' : col.substring(0, col.length - 1));
-        return AuthProfile(role: 'provider', serviceType: serviceType);
+        final rawName = (data['fullName'] as String?)?.trim();
+        final fullName = (rawName == null || rawName.isEmpty) ? null : rawName;
+        return AuthProfile(role: 'provider', serviceType: serviceType, fullName: fullName);
       }
     }
 
     // If the user exists in Auth but no profile doc exists, treat as client.
     return const AuthProfile(role: 'client');
+  }
+
+  /// Client profile `users/{userId}` — [fullName] for display (e.g. on provider request cards).
+  static Future<String?> fetchClientFullName(String userId) async {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+    final doc = await _db.collection('users').doc(id).get();
+    if (!doc.exists) return null;
+    final raw = (doc.data()?['fullName'] as String?)?.trim();
+    return (raw == null || raw.isEmpty) ? null : raw;
   }
 }

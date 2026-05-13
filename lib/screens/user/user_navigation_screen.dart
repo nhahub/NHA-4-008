@@ -1,6 +1,5 @@
 import 'package:ay_khedma/screens/user/user_favorite_screen.dart';
 import 'package:ay_khedma/screens/user/user_history_screen.dart';
-import 'package:ay_khedma/screens/user/user_profile_screen.dart';
 import 'package:ay_khedma/screens/user/user_setting_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:water_drop_nav_bar/water_drop_nav_bar.dart';

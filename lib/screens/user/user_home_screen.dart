@@ -25,7 +25,6 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
   String _normalizedAddress(String address) =>
       address.toLowerCase().replaceAll(RegExp(r'\s+'), ' ').trim();
 
-  /// Firestore values are not always a plain [String]; also try common alternate keys.
   static String? _addressStringFromValue(dynamic value) {
     if (value == null) return null;
     if (value is GeoPoint) return null;
@@ -121,7 +120,7 @@ class _UserHomeScreenState extends State<UserHomeScreen> {
         }
       });
     } catch (_) {
-      // Keep UI resilient even if Firestore read fails.
+
     }
   }
 

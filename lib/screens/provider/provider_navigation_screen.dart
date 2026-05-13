@@ -1,7 +1,7 @@
 import 'package:ay_khedma/screens/provider/provider_earnings_screen.dart';
 import 'package:ay_khedma/screens/provider/provider_history_screen.dart';
 import 'package:ay_khedma/screens/provider/provider_home_screen.dart';
-import 'package:ay_khedma/screens/provider/provider_profile_screen.dart';
+import 'package:ay_khedma/screens/provider/provider_settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:water_drop_nav_bar/water_drop_nav_bar.dart';
 
@@ -21,7 +21,7 @@ class _ProviderNavigationScreenState extends State<ProviderNavigationScreen> {
     const ProviderHomeScreen(),
     const ProviderHistoryScreen(),
     const ProviderEarningsScreen(),
-    const ProviderProfileScreen(),
+    const ProviderSettingsScreen(),
   ];
 
   @override
@@ -74,8 +74,8 @@ class _ProviderNavigationScreenState extends State<ProviderNavigationScreen> {
             outlinedIcon: Icons.attach_money_outlined,
           ),
           BarItem(
-            filledIcon: Icons.person,
-            outlinedIcon: Icons.person_outline,
+            filledIcon: Icons.settings,
+            outlinedIcon: Icons.settings_outlined,
           ),
         ],
       ),

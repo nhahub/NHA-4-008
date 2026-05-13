@@ -8,6 +8,7 @@ import 'screens/register_step3_screen.dart';
 import 'screens/user/user_navigation_screen.dart';
 import 'screens/provider/provider_navigation_screen.dart';
 import 'screens/other_screens.dart';
+import 'screens/user/user_request_service_screen.dart';
 import 'theme/app_colors.dart';
 
 
@@ -40,7 +41,7 @@ class AyKhedmaApp extends StatelessWidget {
         '/user_navigation':     (_) => const UserNavigationScreen(),
         '/provider_navigation': (_) => const ProviderNavigationScreen(),
         '/service-details': (_) => const ServiceDetailsScreen(),
-        '/request':         (_) => const RequestServiceScreen(),
+        '/request':         (_) => const UserRequestServiceScreen(),
         '/payment':         (_) => const PaymentScreen(),
         '/tracking':        (_) => const TrackingScreen(),
         '/rating':          (_) => const RatingScreen(),

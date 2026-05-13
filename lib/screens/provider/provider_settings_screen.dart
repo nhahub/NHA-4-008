@@ -3,16 +3,16 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/app_state.dart';
 import '../../services/session_service.dart';
-import 'user_profile_screen.dart';
+import 'provider_profile_screen.dart';
 
-class UserSettingScreen extends StatefulWidget {
-  const UserSettingScreen({super.key});
+class ProviderSettingsScreen extends StatefulWidget {
+  const ProviderSettingsScreen({super.key});
 
   @override
-  State<UserSettingScreen> createState() => _UserSettingScreenState();
+  State<ProviderSettingsScreen> createState() => _ProviderSettingsScreenState();
 }
 
-class _UserSettingScreenState extends State<UserSettingScreen> {
+class _ProviderSettingsScreenState extends State<ProviderSettingsScreen> {
   bool _isLoggingOut = false;
 
   Future<void> _logout() async {
@@ -77,30 +77,32 @@ class _UserSettingScreenState extends State<UserSettingScreen> {
         children: [
           ListTile(
             leading: const Icon(
-                Icons.person_outline_rounded,
+              Icons.person_outline_rounded,
               size: 25,
             ),
             title: const Text(
               'Profile',
               style: TextStyle(
                 fontSize: 18,
-                  fontFamily: 'Cairo',
-                  fontWeight: FontWeight.w600,
+                fontFamily: 'Cairo',
+                fontWeight: FontWeight.w600,
               ),
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const UserProfileScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const ProviderProfileScreen(),
+                ),
               );
             },
           ),
           const Divider(height: 1),
           ListTile(
             leading: const Icon(
-                Icons.logout_rounded,
-                color: Colors.red,
+              Icons.logout_rounded,
+              color: Colors.red,
               size: 25,
             ),
             title: Text(
