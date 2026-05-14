@@ -170,13 +170,51 @@ class AuthService {
     return const AuthProfile(role: 'client');
   }
 
+  /// Client profile `users/{userId}` — [fullName], [phone], and [profileImageUrl] in one read (e.g. provider request cards).
+  static Future<({String? fullName, String? phone, String? profileImageUrl})> fetchClientDisplayFields(
+    String userId,
+  ) async {
+    final id = userId.trim();
+    if (id.isEmpty) return (fullName: null, phone: null, profileImageUrl: null);
+    final doc = await _db.collection('users').doc(id).get();
+    if (!doc.exists) return (fullName: null, phone: null, profileImageUrl: null);
+    final data = doc.data() ?? const <String, dynamic>{};
+    final rawName = (data['fullName'] as String?)?.trim();
+    final fullName = (rawName == null || rawName.isEmpty) ? null : rawName;
+    final rawPhone = (data['phone'] as String?)?.trim();
+    final phone = (rawPhone == null || rawPhone.isEmpty) ? null : rawPhone;
+    final rawImage = (data['profileImageUrl'] as String?)?.trim();
+    final profileImageUrl = (rawImage == null || rawImage.isEmpty) ? null : rawImage;
+    return (fullName: fullName, phone: phone, profileImageUrl: profileImageUrl);
+  }
+
   /// Client profile `users/{userId}` — [fullName] for display (e.g. on provider request cards).
   static Future<String?> fetchClientFullName(String userId) async {
-    final id = userId.trim();
-    if (id.isEmpty) return null;
-    final doc = await _db.collection('users').doc(id).get();
-    if (!doc.exists) return null;
-    final raw = (doc.data()?['fullName'] as String?)?.trim();
-    return (raw == null || raw.isEmpty) ? null : raw;
+    final r = await fetchClientDisplayFields(userId);
+    return r.fullName;
+  }
+
+  /// Provider profile — [fullName], [phone], and [profileImageUrl] in one read (e.g. user request cards).
+  static Future<({String? fullName, String? phone, String? profileImageUrl})> fetchProviderDisplayFields(
+    String providerId,
+  ) async {
+    final id = providerId.trim();
+    if (id.isEmpty) return (fullName: null, phone: null, profileImageUrl: null);
+    
+    const providerCollections = <String>['electricians', 'plumbers', 'delivery'];
+    for (final col in providerCollections) {
+      final doc = await _db.collection(col).doc(id).get();
+      if (doc.exists) {
+        final data = doc.data() ?? const <String, dynamic>{};
+        final rawName = (data['fullName'] as String?)?.trim();
+        final fullName = (rawName == null || rawName.isEmpty) ? null : rawName;
+        final rawPhone = (data['phone'] as String?)?.trim();
+        final phone = (rawPhone == null || rawPhone.isEmpty) ? null : rawPhone;
+        final rawImage = (data['profileImageUrl'] as String?)?.trim();
+        final profileImageUrl = (rawImage == null || rawImage.isEmpty) ? null : rawImage;
+        return (fullName: fullName, phone: phone, profileImageUrl: profileImageUrl);
+      }
+    }
+    return (fullName: null, phone: null, profileImageUrl: null);
   }
 }

@@ -58,4 +58,52 @@ class RequestService {
       return list;
     });
   }
+
+  /// Live updates for all requests created by [userId].
+  static Stream<List<RequestModel>> watchRequestsForUser(String userId) {
+    return _db
+        .collection(collectionName)
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snap) {
+      final list = snap.docs
+          .map((d) => RequestModel.fromMap(d.data(), documentId: d.id))
+          .toList();
+      list.sort((a, b) {
+        final ta = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final tb = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return tb.compareTo(ta);
+      });
+      return list;
+    });
+  }
+
+  /// Updates the status of a request document.
+  static Future<void> updateRequestStatus(String requestId, RequestStatus status) async {
+    await _db.collection(collectionName).doc(requestId).update({
+      'status': status.firestoreValue,
+    });
+  }
+
+  /// Adds an additional expense to the starting price and saves the reason.
+  static Future<void> modifyOffer({
+    required String requestId,
+    required double additionalExpense,
+    required String reason,
+    required double currentPrice,
+  }) async {
+    await _db.collection(collectionName).doc(requestId).update({
+      'additionalExpense': additionalExpense,
+      'additionalExpenseReason': reason,
+      'totalPrice': currentPrice + additionalExpense,
+    });
+  }
+
+  /// Processes the payment, stores the method, and finishes the request.
+  static Future<void> payRequest(String requestId, String paymentMethod) async {
+    await _db.collection(collectionName).doc(requestId).update({
+      'paymentMethod': paymentMethod,
+      'status': RequestStatus.finished.firestoreValue,
+    });
+  }
 }

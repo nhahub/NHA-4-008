@@ -15,29 +15,40 @@ class ProviderHomeScreen extends StatefulWidget {
 class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
 
   final Map<String, String> _clientFullNamesByUserId = {};
-  final Set<String> _clientNameFetchInFlight = {};
+  final Map<String, String> _clientPhonesByUserId = {};
+  final Map<String, String> _clientImagesByUserId = {};
+  final Set<String> _clientDisplayFetchInFlight = {};
 
-  void _prefetchClientFullNames(Iterable<RequestModel> requests) {
+  void _prefetchClientDisplayFields(Iterable<RequestModel> requests) {
     if (!mounted) return;
     for (final r in requests) {
       final id = r.userId.trim();
       if (id.isEmpty) continue;
-      if (_clientFullNamesByUserId.containsKey(id) || _clientNameFetchInFlight.contains(id)) {
+      if (_clientFullNamesByUserId.containsKey(id) && _clientPhonesByUserId.containsKey(id) && _clientImagesByUserId.containsKey(id)) {
         continue;
       }
-      _clientNameFetchInFlight.add(id);
-      AuthService.fetchClientFullName(id).then((name) {
+      if (_clientDisplayFetchInFlight.contains(id)) continue;
+      _clientDisplayFetchInFlight.add(id);
+      AuthService.fetchClientDisplayFields(id).then((fields) {
         if (!mounted) return;
         setState(() {
-          _clientNameFetchInFlight.remove(id);
+          _clientDisplayFetchInFlight.remove(id);
           _clientFullNamesByUserId[id] =
-              (name != null && name.isNotEmpty) ? name : 'Customer';
+              (fields.fullName != null && fields.fullName!.isNotEmpty)
+                  ? fields.fullName!
+                  : 'Customer';
+          _clientPhonesByUserId[id] =
+              (fields.phone != null && fields.phone!.isNotEmpty) ? fields.phone! : '';
+          _clientImagesByUserId[id] = 
+              (fields.profileImageUrl != null && fields.profileImageUrl!.isNotEmpty) ? fields.profileImageUrl! : '';
         });
       }).catchError((_) {
         if (!mounted) return;
         setState(() {
-          _clientNameFetchInFlight.remove(id);
+          _clientDisplayFetchInFlight.remove(id);
           _clientFullNamesByUserId[id] = 'Customer';
+          _clientPhonesByUserId[id] = '';
+          _clientImagesByUserId[id] = '';
         });
       });
     }
@@ -47,6 +58,23 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     final id = userId.trim();
     if (id.isEmpty) return 'Customer';
     return _clientFullNamesByUserId[id] ?? 'Customer';
+  }
+
+  /// `null` while loading or if the client has no phone on file.
+  String? _customerPhoneLine(String userId) {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+    if (!_clientPhonesByUserId.containsKey(id)) return null;
+    final p = _clientPhonesByUserId[id]!;
+    return p.isEmpty ? null : p;
+  }
+
+  String? _customerProfileImage(String userId) {
+    final id = userId.trim();
+    if (id.isEmpty) return null;
+    if (!_clientImagesByUserId.containsKey(id)) return null;
+    final img = _clientImagesByUserId[id]!;
+    return img.isEmpty ? null : img;
   }
   @override
   Widget build(BuildContext context) {
@@ -260,7 +288,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
             );
           }
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            _prefetchClientFullNames(incoming);
+            _prefetchClientDisplayFields(incoming);
           });
           return Column(
             children: [
@@ -271,6 +299,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
                   state: state,
                   request: incoming[i],
                   customerName: _customerDisplayName(incoming[i].userId),
+                  customerPhone: _customerPhoneLine(incoming[i].userId),
+                  customerImage: _customerProfileImage(incoming[i].userId),
                 ),
               ],
             ],
@@ -318,6 +348,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
     required AppState state,
     required RequestModel request,
     required String customerName,
+    String? customerPhone,
+    String? customerImage,
   }) {
     final timeAgo = _formatTimeAgo(request.createdAt);
     final address = request.location?.trim().isNotEmpty == true ? request.location!.trim() : '—';
@@ -331,21 +363,48 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(
-              customerName,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                color: AppColors.black,
-                fontFamily: 'Cairo',
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: AppColors.gray.withOpacity(0.1),
+                backgroundImage: customerImage != null ? NetworkImage(customerImage) : null,
+                child: customerImage == null
+                    ? const Icon(Icons.person, color: AppColors.gray, size: 20)
+                    : null,
               ),
-            ),
-            Text(
-              timeAgo.isEmpty ? ' ' : timeAgo,
-              style: const TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo'),
-            ),
-          ]),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(
+                  customerName,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.black,
+                    fontFamily: 'Cairo',
+                  ),
+                ),
+                Text(
+                  timeAgo.isEmpty ? ' ' : timeAgo,
+                  style: const TextStyle(fontSize: 11, color: AppColors.gray, fontFamily: 'Cairo'),
+                ),
+                if (customerPhone != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.phone_outlined, size: 14, color: AppColors.teal),
+                      const SizedBox(width: 4),
+                      Text(
+                        customerPhone,
+                        style: const TextStyle(fontSize: 12, color: AppColors.gray, fontFamily: 'Cairo'),
+                      ),
+                    ],
+                  ),
+                ],
+              ]),
+            ],
+          ),
           Text('$price EGP', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: AppColors.teal, fontFamily: 'Cairo')),
         ]),
         const SizedBox(height: 10),
@@ -385,14 +444,18 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
         const SizedBox(height: 14),
         Row(children: [
           Expanded(child: ElevatedButton(
-            onPressed: () {},
+            onPressed: () {
+              RequestService.updateRequestStatus(request.requestId, RequestStatus.accepted);
+            },
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.teal,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), padding: const EdgeInsets.symmetric(vertical: 11)),
             child: const Text('✓ Accept', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white, fontFamily: 'Cairo')),
           )),
           const SizedBox(width: 10),
           Expanded(flex: 0, child: SizedBox(width: 100, child: OutlinedButton(
-            onPressed: () {},
+            onPressed: () {
+              RequestService.updateRequestStatus(request.requestId, RequestStatus.declined);
+            },
             style: OutlinedButton.styleFrom(foregroundColor: AppColors.red,
               side: BorderSide(color: AppColors.red.withOpacity(0.3)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), padding: const EdgeInsets.symmetric(vertical: 11)),

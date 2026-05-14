@@ -11,6 +11,7 @@ enum RequestStatus {
   pending,
   paymentRequired,
   completed,
+  finished,
 }
 
 extension RequestStatusX on RequestStatus {
@@ -29,6 +30,8 @@ extension RequestStatusX on RequestStatus {
         return 'Payment Required';
       case RequestStatus.completed:
         return 'Completed';
+      case RequestStatus.finished:
+        return 'Finished';
     }
   }
 
@@ -46,6 +49,8 @@ extension RequestStatusX on RequestStatus {
         return RequestStatus.paymentRequired;
       case 'Completed':
         return RequestStatus.completed;
+      case 'Finished':
+        return RequestStatus.finished;
       default:
         return RequestStatus.waiting;
     }
@@ -61,6 +66,10 @@ class RequestModel {
   final String providerId;
   /// Provider’s advertised starting price at booking time (EGP).
   final double startingPrice;
+  final double? additionalExpense;
+  final String? additionalExpenseReason;
+  final double? totalPrice;
+  final String? paymentMethod;
   final String label;
   final String description;
   final RequestStatus status;
@@ -77,6 +86,10 @@ class RequestModel {
     required this.userId,
     required this.providerId,
     this.startingPrice = 0,
+    this.additionalExpense,
+    this.additionalExpenseReason,
+    this.totalPrice,
+    this.paymentMethod,
     required this.label,
     required this.description,
     required this.status,
@@ -112,6 +125,10 @@ class RequestModel {
           (map['providerId'] as String?) ??
           '',
       startingPrice: (map['startingPrice'] as num?)?.toDouble() ?? 0,
+      additionalExpense: (map['additionalExpense'] as num?)?.toDouble(),
+      additionalExpenseReason: map['additionalExpenseReason'] as String?,
+      totalPrice: (map['totalPrice'] as num?)?.toDouble(),
+      paymentMethod: map['paymentMethod'] as String?,
       label: (map['label'] as String?) ?? '',
       description: (map['description'] as String?) ?? '',
       status: RequestStatusX.fromFirestore(map['status'] as String?),
@@ -127,6 +144,10 @@ class RequestModel {
         'userId': userId,
         'provider_Id': providerId,
         'startingPrice': startingPrice,
+        if (additionalExpense != null) 'additionalExpense': additionalExpense,
+        if (additionalExpenseReason != null) 'additionalExpenseReason': additionalExpenseReason,
+        if (totalPrice != null) 'totalPrice': totalPrice,
+        if (paymentMethod != null) 'paymentMethod': paymentMethod,
         'label': label,
         'description': description,
         'status': status.firestoreValue,
